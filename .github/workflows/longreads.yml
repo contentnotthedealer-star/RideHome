@@ -2,11 +2,7 @@ name: Scrape Longreads
 
 on:
   schedule:
-    # Every Friday at 6:00 PM UTC (adjust offset for your timezone)
-    # 6pm UTC = 2pm ET / 11am PT
     - cron: "0 18 * * 5"
-
-  # Allow manual trigger from the Actions tab (useful for testing)
   workflow_dispatch:
 
 jobs:
@@ -24,6 +20,9 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Verify scraper version
+        run: grep -n "Found.*links\|Apple Podcasts" scraper.py
 
       - name: Run scraper
         env:
