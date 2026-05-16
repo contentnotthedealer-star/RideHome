@@ -92,6 +92,11 @@ def extract_longreads(episode):
     extractor.feed(text)
     link_map = {link_text: href for link_text, href in extractor.links if link_text}
 
+    # Debug: print all extracted links
+    print(f"🔗 Found {len(link_map)} links in episode HTML:")
+    for lt, href in list(link_map.items())[:10]:
+        print(f"   '{lt[:60]}' → {href[:80]}")
+
     # ── Step 2: get plain text and find the Longreads block ──────────────────
     plain = re.sub(r"<[^>]+>", "", text)
 
@@ -175,12 +180,11 @@ def main():
     episode = fetch_latest_episode()
 
     episode_title = episode.get("title", "Unknown Episode")
-    episode_url = episode.get("link", "") or episode.get("id", "") or ""
-
-    # Debug: print available fields to diagnose URL issue
-    print(f"🔗 Episode link field: '{episode.get('link', 'NOT FOUND')}'")
-    print(f"🔗 Episode id field: '{episode.get('id', 'NOT FOUND')}'")
-    print(f"🔗 Episode guid: '{episode.get('guid', 'NOT FOUND')}')")
+    
+    # This feed has no link field — construct the Apple Podcasts URL from the GUID
+    guid = episode.get("id", "") or episode.get("guid", "")
+    podcast_id = "1355212895"  # Tech Brew Ride Home Apple Podcasts ID
+    episode_url = f"https://podcasts.apple.com/us/podcast/tech-brew-ride-home/id{podcast_id}?i={guid}" if guid else ""
     pub_date = episode.get("published", "")
 
     # Normalise date to YYYY-MM-DD
