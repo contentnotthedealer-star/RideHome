@@ -1,0 +1,32 @@
+name: Scrape Longreads
+
+on:
+  schedule:
+    # Every Friday at 6:00 PM UTC (adjust offset for your timezone)
+    # 6pm UTC = 2pm ET / 11am PT
+    - cron: "0 18 * * 5"
+
+  # Allow manual trigger from the Actions tab (useful for testing)
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python scraper.py
