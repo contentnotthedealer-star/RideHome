@@ -89,8 +89,9 @@ def extract_longreads(episode):
                 self._current_text.append(data)
 
     extractor = LinkExtractor()
-    extractor.feed(text)
+   extractor.feed(text)
     link_map = {link_text: href for link_text, href in extractor.links if link_text}
+    print(f"DEBUG LINK COUNT: {len(link_map)}")
 
     # Debug: print all extracted links
     print(f"🔗 Found {len(link_map)} links in episode HTML:")
