@@ -55,17 +55,46 @@ def extract_longreads(episode):
 
     Returns a list of dicts: {title, source, url}
     """
+    from html.parser import HTMLParser
+
     # feedparser gives us the raw HTML in .summary or .content
     raw = episode.get("summary", "") or ""
 
     # Unescape HTML entities
     text = unescape(raw)
 
-    # Strip all HTML tags to get plain text
+    # ── Step 1: extract (link_text, href) pairs from the HTML ────────────────
+    class LinkExtractor(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.links = []       # list of (text, href)
+            self._current_href = None
+            self._current_text = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "a":
+                attrs_dict = dict(attrs)
+                self._current_href = attrs_dict.get("href", "")
+                self._current_text = []
+
+        def handle_endtag(self, tag):
+            if tag == "a" and self._current_href is not None:
+                link_text = "".join(self._current_text).strip()
+                self.links.append((link_text, self._current_href))
+                self._current_href = None
+                self._current_text = []
+
+        def handle_data(self, data):
+            if self._current_href is not None:
+                self._current_text.append(data)
+
+    extractor = LinkExtractor()
+    extractor.feed(text)
+    link_map = {link_text: href for link_text, href in extractor.links if link_text}
+
+    # ── Step 2: get plain text and find the Longreads block ──────────────────
     plain = re.sub(r"<[^>]+>", "", text)
 
-    # Find the Longreads block — everything after "Longreads" up to
-    # "Learn more" footer or end of string
     match = re.search(
         r"Longreads\s*\n(.*?)(?=Learn more about your ad|$)",
         plain,
@@ -78,9 +107,7 @@ def extract_longreads(episode):
 
     block = match.group(1).strip()
 
-    # Each longread is a bullet line like:
-    # ⁠Article title here⁠ (Source Name)
-    # or plain lines without bullets
+    # ── Step 3: parse each line and look up its URL ───────────────────────────
     articles = []
     for line in block.splitlines():
         line = line.strip().lstrip("•·⁠​-– ").strip()
@@ -96,8 +123,16 @@ def extract_longreads(episode):
             title = line
             source = ""
 
+        # Look up the URL — match on title text (strip invisible chars)
+        clean_title = title.strip("⁠​").strip()
+        url = ""
+        for link_text, href in link_map.items():
+            if clean_title in link_text or link_text in clean_title:
+                url = href
+                break
+
         if title:
-            articles.append({"title": title, "source": source})
+            articles.append({"title": title, "source": source, "url": url})
 
     return articles
 
@@ -112,7 +147,7 @@ def ensure_header(sheets, spreadsheet_id, sheet_name):
         .execute()
     )
     if not result.get("values"):
-        header = [["Date", "Episode Title", "Article Title", "Source", "Episode URL"]]
+        header = [["Date", "Episode Title", "Article Title", "Source", "Article URL", "Episode URL"]]
         sheets.values().update(
             spreadsheetId=spreadsheet_id,
             range=f"{sheet_name}!A1",
@@ -140,7 +175,12 @@ def main():
     episode = fetch_latest_episode()
 
     episode_title = episode.get("title", "Unknown Episode")
-    episode_url = episode.get("link", "")
+    episode_url = episode.get("link", "") or episode.get("id", "") or ""
+
+    # Debug: print available fields to diagnose URL issue
+    print(f"🔗 Episode link field: '{episode.get('link', 'NOT FOUND')}'")
+    print(f"🔗 Episode id field: '{episode.get('id', 'NOT FOUND')}'")
+    print(f"🔗 Episode guid: '{episode.get('guid', 'NOT FOUND')}')")
     pub_date = episode.get("published", "")
 
     # Normalise date to YYYY-MM-DD
@@ -162,9 +202,9 @@ def main():
     for a in articles:
         print(f"   • {a['title']} ({a['source']})")
 
-    # Build rows: [Date, Episode Title, Article Title, Source, Episode URL]
+    # Build rows: [Date, Episode Title, Article Title, Source, Article URL, Episode URL]
     rows = [
-        [date_str, episode_title, a["title"], a["source"], episode_url]
+        [date_str, episode_title, a["title"], a["source"], a["url"], episode_url]
         for a in articles
     ]
 
