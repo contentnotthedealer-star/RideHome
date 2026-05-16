@@ -30,6 +30,3 @@ jobs:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: python scraper.py
 
-"""
-FORCE DEBUG
-"""
