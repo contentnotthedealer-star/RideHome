@@ -128,14 +128,11 @@ def extract_longreads(episode):
         else:
             title = line
             source = ""
-
-        # Look up the URL — match on title text (strip invisible chars)
+            
+        # Build a Google search URL for the article
+        from urllib.parse import quote
         clean_title = title.strip("⁠​").strip()
-        url = ""
-        for link_text, href in link_map.items():
-            if clean_title in link_text or link_text in clean_title:
-                url = href
-                break
+        url = f"https://www.google.com/search?q={quote(clean_title + ' ' + source)}"
 
         if title:
             articles.append({"title": title, "source": source, "url": url})
@@ -223,7 +220,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-FORCE DEBUG
-"""
