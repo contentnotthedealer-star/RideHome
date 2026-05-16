@@ -160,14 +160,34 @@ def ensure_header(sheets, spreadsheet_id, sheet_name):
         print("✅ Header row written.")
 
 
+def get_existing_keys(sheets, spreadsheet_id, sheet_name):
+    """Return a set of (date, article_title) tuples already in the sheet."""
+    result = (
+        sheets.values()
+        .get(spreadsheetId=spreadsheet_id, range=f"{sheet_name}!A:C")
+        .execute()
+    )
+    rows = result.get("values", [])
+    # Skip header row, build set of (date, title) keys
+    return {(row[0], row[2]) for row in rows[1:] if len(row) >= 3}
+
+
 def append_rows(sheets, spreadsheet_id, sheet_name, rows):
-    """Append rows to the sheet."""
+    """Append rows to the sheet, skipping duplicates."""
+    existing = get_existing_keys(sheets, spreadsheet_id, sheet_name)
+    new_rows = [r for r in rows if (r[0], r[2]) not in existing]
+
+    if not new_rows:
+        print("⏭️  All articles already in sheet — nothing to append.")
+        return
+
+    print(f"⏭️  Skipping {len(rows) - len(new_rows)} duplicate(s).")
     sheets.values().append(
         spreadsheetId=spreadsheet_id,
         range=f"{sheet_name}!A1",
         valueInputOption="RAW",
         insertDataOption="INSERT_ROWS",
-        body={"values": rows},
+        body={"values": new_rows},
     ).execute()
 
 
