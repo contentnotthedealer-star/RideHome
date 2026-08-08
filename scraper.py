@@ -235,7 +235,12 @@ def main():
     ensure_header(sheets, SPREADSHEET_ID, SHEET_NAME)
     append_rows(sheets, SPREADSHEET_ID, SHEET_NAME, rows)
 
-    print(f"✅ Done — {len(rows)} row(s) appended to '{SHEET_NAME}'.")
+   print(f"✅ Done — {len(rows)} row(s) appended to '{SHEET_NAME}'.")
+
+    # Write a timestamp file so the workflow can commit it — keeps repo "active"
+    # so GitHub doesn't auto-disable the scheduled workflow after 60 days.
+    with open("last_run.txt", "w") as f:
+        f.write(f"Last successful run: {datetime.datetime.now().isoformat()}\n")
 
 
 if __name__ == "__main__":
