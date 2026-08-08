@@ -241,7 +241,6 @@ def main():
     # so GitHub doesn't auto-disable the scheduled workflow after 60 days.
     with open("last_run.txt", "w") as f:
         f.write(f"Last successful run: {datetime.datetime.now().isoformat()}\n")
-
-
+        
 if __name__ == "__main__":
     main()
