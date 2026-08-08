@@ -1,5 +1,8 @@
 name: Scrape Longreads
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: "0 18 * * 5"
@@ -23,12 +26,6 @@ jobs:
 
       - name: Verify scraper version
         run: grep -n "Found.*links\|Apple Podcasts" scraper.py
-
-      - name: Run scraper
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-        run: python scraper.py
 
       - name: Run scraper
         env:
